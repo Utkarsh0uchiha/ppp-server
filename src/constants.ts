@@ -1,3 +1,3 @@
-type QUESTION_TYPES = 'GENERAL' | 'GCS' | 'GEC' | 'GCT' | 'GFT' | 'GME' | 'GEE' | 'GIN';
-
+type QUESTION_TYPES = 'GENERAL' | 'GCS' | 'GEC' | 'GCT'
+    | 'GCE' | 'GFT' | 'GME' | 'GEE' | 'GIN';
 export {QUESTION_TYPES};
