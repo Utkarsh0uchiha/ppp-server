@@ -16,6 +16,12 @@ aptitudeRouter.post('/question/delete', verifyJwt, adminAccess, aptitudeControll
 aptitudeRouter.post('/appear/:id', aptitudeController.getAptitudeForUser);
 aptitudeRouter.post('/submit/:id', aptitudeController.submitAptitude);
 aptitudeRouter.get("/responses/:id", verifyJwt, adminAccess, aptitudeController.getAptitudeResponses);
+aptitudeRouter.delete(
+    "/responses/:id/:regno",
+    verifyJwt,
+    adminAccess,
+    aptitudeController.resetAptitudeResponse
+);
 aptitudeRouter.get("/user/response/:id", verifyJwt, aptitudeController.getUserApitudeResponse);
 aptitudeRouter.get("/toppers/:id", aptitudeController.getAptitudeToppers);
 

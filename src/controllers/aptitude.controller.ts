@@ -503,6 +503,39 @@ class AptitudeController {
         }
     });
 
+    public resetAptitudeResponse = asyncHandler(async (req: Request, res: Response) => {
+        const aptitudeId = req.params.id;
+        const regno = req.params.regno;
+
+        try {
+            const { rows } = await dbPool.query(
+                `DELETE FROM user_responses
+             WHERE aptitude_test_id = $1
+             AND regno = $2
+             RETURNING *`,
+                [aptitudeId, regno]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json(
+                    new ApiError("Response not found", 404)
+                );
+            }
+
+            return res.status(200).json(
+                new ApiResponse(
+                    "Aptitude attempt reset successfully",
+                    200,
+                    rows[0]
+                )
+            );
+        } catch (error) {
+            return res.status(500).json(
+                new ApiError((error as Error).message, 500)
+            );
+        }
+    });
+    
     public getUserApitudeResponse = asyncHandler(async (req: CustomRequest, res: Response) => {
         const aptiId = req.params.id;
         let regno = req?.query?.regno;
