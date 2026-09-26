@@ -256,7 +256,21 @@ class AptitudeController {
                 return res.status(404).json(new ApiError('Aptitude test has ended', 401));
             }
 
+            const { rows: existingResponse } = await client.query(
+                `SELECT 1
+                FROM user_responses
+                WHERE aptitude_test_id = $1
+                AND regno = $2
+                LIMIT 1`,
+                [aptitudeId, userData.regno]
+            );
 
+            if (existingResponse.length > 0) {
+                return res.status(409).json(
+                    new ApiError("You have already appeared for this test", 409)
+                );
+            }
+            
             const { rows } = await client.query(
                 `SELECT 
                     q.id AS id,
@@ -535,7 +549,7 @@ class AptitudeController {
             );
         }
     });
-    
+
     public getUserApitudeResponse = asyncHandler(async (req: CustomRequest, res: Response) => {
         const aptiId = req.params.id;
         let regno = req?.query?.regno;
