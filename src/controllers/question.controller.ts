@@ -82,6 +82,98 @@ class QuestionController {
         }
 
     });
+    
+    public updateQuestion = asyncHandler(async (req: Request, res: Response) => {
+        const questionId = Number(req.params.id);
+
+        if (!questionId) {
+            return res.status(400).json(
+                new ApiError("Invalid question ID", 400)
+            );
+        }
+
+        const {
+            description,
+            options,
+            correct_option,
+            difficulty_level,
+            question_type,
+            format,
+            topic_tags,
+        } = req.body;
+
+        try {
+            let parsedOptions = options;
+            let parsedCorrectOptions = correct_option;
+            let parsedTopics = topic_tags;
+
+            // Options
+            if (typeof parsedOptions === "string") {
+                parsedOptions = parsedOptions.split("/|/");
+            }
+
+            // Correct options
+            if (typeof parsedCorrectOptions === "string") {
+                try {
+                    parsedCorrectOptions = JSON.parse(parsedCorrectOptions);
+                } catch {
+                    parsedCorrectOptions = parsedCorrectOptions
+                        .split("/|/")
+                        .map(Number);
+                }
+            }
+
+            // Topics
+            if (typeof parsedTopics === "string") {
+                parsedTopics = parsedTopics.split(",");
+            }
+
+            if (!Array.isArray(parsedCorrectOptions)) {
+                parsedCorrectOptions = [Number(parsedCorrectOptions)];
+            }
+
+            const { rows } = await dbPool.query(
+                `UPDATE questions
+             SET description = $1,
+                 options = $2,
+                 correct_option = $3,
+                 difficulty_level = $4,
+                 question_type = $5,
+                 format = $6,
+                 topic_tags = $7
+             WHERE id = $8
+             RETURNING *`,
+                [
+                    description,
+                    parsedOptions,
+                    parsedCorrectOptions,
+                    difficulty_level,
+                    question_type,
+                    format,
+                    parsedTopics,
+                    questionId,
+                ]
+            );
+
+            if (rows.length === 0) {
+                return res.status(404).json(
+                    new ApiError("Question not found", 404)
+                );
+            }
+
+            return res.status(200).json(
+                new ApiResponse(
+                    "Question updated successfully",
+                    200,
+                    rows[0]
+                )
+            );
+        } catch (error) {
+            return res.status(500).json(
+                new ApiError((error as Error).message, 500)
+            );
+        }
+    });
 
     public deleteQuestion = asyncHandler(async (req: Request, res: Response) => {
         const id: number = +req.params.id;

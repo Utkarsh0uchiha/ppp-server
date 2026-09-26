@@ -7,6 +7,12 @@ const questionRouter = express.Router();
 
 questionRouter.post('/get', verifyJwt, adminAccess, questionController.getQuestions);
 questionRouter.post('/create', verifyJwt, adminAccess, upload.single('img'), questionController.addQuestion);
+questionRouter.put(
+    '/:id',
+    verifyJwt,
+    adminAccess,
+    questionController.updateQuestion
+);
 questionRouter.delete('/:id', verifyJwt, adminAccess, questionController.deleteQuestion);
 questionRouter.post('/ask-ai/:id', questionController.explainUsingAi);
 questionRouter.get('/topics', questionController.getQuestionTopics);
