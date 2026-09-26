@@ -270,7 +270,7 @@ class AptitudeController {
                     new ApiError("You have already appeared for this test", 409)
                 );
             }
-            
+
             const { rows } = await client.query(
                 `SELECT 
                     q.id AS id,
@@ -535,7 +535,7 @@ class AptitudeController {
                     new ApiError("Response not found", 404)
                 );
             }
-
+            await redisClient.del(`toppers:${aptitudeId}`);
             return res.status(200).json(
                 new ApiResponse(
                     "Aptitude attempt reset successfully",
