@@ -139,7 +139,7 @@ class AptitudeController {
             const updateValues = [Date.now().toString(), questionIds];
             console.log(Date.now().toString())
             await client.query(updateQuery, updateValues);
-            
+
 
             return res.status(200).json(new ApiResponse('Questions added to aptitude test successfully', 200, rows));
         } catch (error) {
@@ -294,19 +294,19 @@ class AptitudeController {
             // Validate and fix question data before sending to frontend
             const validatedQuestions = rows.map((question: any) => {
                 // Ensure correct_option is always a valid array
-                if (!question.correct_option || 
-                    !Array.isArray(question.correct_option) || 
+                if (!question.correct_option ||
+                    !Array.isArray(question.correct_option) ||
                     question.correct_option.length === 0) {
                     console.warn(`Question ${question.id} has invalid correct_option:`, question.correct_option);
                     question.correct_option = [1]; // Default to first option
                 }
-                
+
                 // Ensure options is always an array
                 if (!question.options || !Array.isArray(question.options)) {
                     console.warn(`Question ${question.id} has invalid options:`, question.options);
                     question.options = [];
                 }
-                
+
                 return question;
             });
 
@@ -414,7 +414,7 @@ class AptitudeController {
                     [answer.question_id]
                 );
                 // Check if any of the selected options match any of the correct options
-                const hasCorrectAnswer = answer.selected_options.some(selectedOption => 
+                const hasCorrectAnswer = answer.selected_options.some(selectedOption =>
                     questionRows[0].correct_option.includes(selectedOption)
                 );
                 if (hasCorrectAnswer) {
@@ -443,6 +443,7 @@ class AptitudeController {
         const id = req.params.id;
         const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
         const items = req.query.items ? parseInt(req.query.items as string, 10) : 20;
+        const search = (req.query.search as string || "").trim();
 
         try {
             // Query to fetch responses with rank
@@ -463,32 +464,42 @@ class AptitudeController {
                         user_responses ur
                     INNER JOIN 
                         users u ON ur.regno = u.regno
-                    WHERE 
+                   WHERE
                         ur.aptitude_test_id = $1
+                        AND (
+                            $2 = ''
+                            OR u.regno ILIKE '%' || $2 || '%'
+                            OR u.name ILIKE '%' || $2 || '%'
+                            OR u.trade ILIKE '%' || $2 || '%'
+                        )
                 )
                 SELECT * 
                 FROM ranked_responses
                 ORDER BY rank ASC
-                LIMIT $2 OFFSET $3;
+                LIMIT $3 OFFSET $4;
             `;
 
             // Query to get the total count of responses
             const countQuery = `
-                SELECT 
-                    COUNT(*) AS total
-                FROM 
-                    user_responses 
-                WHERE 
-                    aptitude_test_id = $1;
+                SELECT COUNT(*) AS total
+                FROM user_responses ur
+                INNER JOIN users u ON ur.regno = u.regno
+                WHERE ur.aptitude_test_id = $1
+                AND (
+                    $2 = ''
+                    OR u.regno ILIKE '%' || $2 || '%'
+                    OR u.name ILIKE '%' || $2 || '%'
+                    OR u.trade ILIKE '%' || $2 || '%'
+                );
             `;
-
             // Execute both queries
-            const countResult = await dbPool.query(countQuery, [id]);
+            const countResult = await dbPool.query(countQuery, [id, search]);
             const totalResponses = parseInt(countResult.rows[0].total, 10);
             const totalPages = Math.ceil(totalResponses / items);
 
             const responseResult = await dbPool.query(responseQuery, [
                 id,
+                search,
                 items,
                 items * (page - 1),
             ]);
@@ -614,7 +625,7 @@ class AptitudeController {
             const response = answers.map((ans) => {
                 // Check if any of the selected options match any of the correct options
                 const question = questionRows.rows.find((q: any) => q.id === ans.question_id);
-                const hasCorrectAnswer = ans.selected_options.some(selectedOption => 
+                const hasCorrectAnswer = ans.selected_options.some(selectedOption =>
                     question.correct_option.includes(selectedOption)
                 );
                 userMarks += hasCorrectAnswer ? 1 : 0;
